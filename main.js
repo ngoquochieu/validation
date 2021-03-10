@@ -31,6 +31,7 @@ function Validator (options) {
             errorElement.innerText = '';
             inputElement.parentElement.classList.remove('invalid');
         }
+        return !errorMess; // Nếu có lỗi trả về false
     }
 
     var formElement = document.querySelector(options.form);
@@ -39,14 +40,39 @@ function Validator (options) {
         //Khi submit
             formElement.onsubmit = function (e) {
                 e.preventDefault();
-            
+                
+                var isFormValid = true;
 
         //Lặp qua từng rule và validate
 
         options.rules.forEach(rule => {
             var inputElement = formElement.querySelector(rule.selector);
-            validate(inputElement, rule);
-        })
+            var isValid = validate(inputElement, rule);
+            //Nếu có lỗi 
+            if(!isValid) {
+                isFormValid = false;
+            }
+
+        });
+
+        if(isFormValid)
+            //Trường hợp submit với JS
+            if(typeof options.onSubmit == 'function') {
+
+                //Lấy ra những element có thuộc tính là name và ko có disable
+                //Ở đây trả về node list
+                var enableInputs = formElement.querySelectorAll('[name]:not([disable])');
+
+                //Convert node list => array
+                var formValue = Array.from(enableInputs).reduce( function (values, input) {
+                    return (values[input.name] = input.value) && values;    
+                }, {});
+                options.onSubmit(formValue);
+            } 
+            //Trường hợp submit mặt định
+            else {
+                formElement.onSubmit();
+            }
     }
         //Lặp qua mỗi rule và xử lí
         options.rules.forEach(rule => {
