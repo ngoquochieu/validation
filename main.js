@@ -1,11 +1,26 @@
 //Validator object
 function Validator (options) {
 
+    var selectorRules = {};
+
+
     function validate (inputElement, rule) {
 
-        var errorMess = rule.test(inputElement.value);
+
+        var errorMess;
         var errorElement = inputElement.parentElement.querySelector(options.errorSelector);
 
+        //Lấy ra các rules của selector
+        var rules = selectorRules[rule.selector];
+
+        //Lặp qua từng rule và kiểm tra
+        for(var i = 0; i < rules.length; i ++) {
+            errorMess = rules[i](inputElement.value);
+
+            //Nếu có lỗi thì dừng kiểm tra
+            if(errorMess)
+                break;
+        }
         if(errorMess) {
 
             errorElement.innerText = errorMess;
@@ -19,10 +34,33 @@ function Validator (options) {
     }
 
     var formElement = document.querySelector(options.form);
-
     if(formElement) {
+        
+        //Khi submit
+            formElement.onsubmit = function (e) {
+                e.preventDefault();
+            
+
+        //Lặp qua từng rule và validate
 
         options.rules.forEach(rule => {
+            var inputElement = formElement.querySelector(rule.selector);
+            validate(inputElement, rule);
+        })
+    }
+        //Lặp qua mỗi rule và xử lí
+        options.rules.forEach(rule => {
+
+            //Lưu lại các rules cho mỗi inout
+            if (Array.isArray(selectorRules[rule.selector])){
+
+                selectorRules[rule.selector].push(rule.test);
+
+            } else {
+
+                selectorRules[rule.selector] = [rule.test]; 
+            }
+            
 
             var inputElement = formElement.querySelector(rule.selector);
 
@@ -43,39 +81,49 @@ function Validator (options) {
                     inputElement.parentElement.classList.remove('invalid');
                 });
             }
-        });
+        });             
     }
-
 }
 
 // Define rules
 // Nguyên tắc của các rule
     //1. Khi có lỗi thì trả ra mess lỗi
     //2. Khi không có lỗi thì không trả ra gì cả
-Validator.isRequirement = function (selector) {
+Validator.isRequirement = function (selector, message) {
     return {
         selector: selector,
         test: function (value) {
             
-            return value.trim() ? undefined : 'Vui lòng nhập trường này';
+            return value.trim() ? undefined : message || 'Vui lòng nhập trường này';
         }
     };
 }
-Validator.isEmail = function (selector) {
+Validator.isEmail = function (selector, message) {
     return {
         selector: selector,
         test: function (value) {
             var regex = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)*$/;
-            return regex.test(value) ? undefined : 'Trường này phải là email';
+            return regex.test(value) ? undefined : message || 'Trường này phải là email';
         }
     };
 }
 
-Validator.isPassword = function (selector, min) {
+Validator.isPassword = function (selector, min, message) {
     return {
         selector: selector,
         test: function (value) {
-            return value.length >= min ? undefined : `Vui lòng nhập ít nhất ${min} kí tự`;
+
+            return value.length >= min ? undefined : message || `Vui lòng nhập ít nhất ${min} kí tự`;
+        }
+    }
+}
+
+Validator.confirmPassword = function (selector, getPassword, message) {
+    return {
+        selector: selector,
+        test: function (value) {
+
+            return value === getPassword() ? undefined : message || `Gía trị nhập vào không chính xác`;
         }
     }
 }

@@ -53,8 +53,14 @@
       errorSelector: '.form-message',
       rules: [
         Validator.isRequirement('#fullname'),
+        Validator.isRequirement('#email'),
         Validator.isEmail('#email'),
-        Validator.isPassword('#password', 6)
+        Validator.isRequirement('#password'),
+        Validator.isPassword('#password', 6),
+        //Validator.isRequirement('#password_confirmation'),
+        Validator.confirmPassword('#password_confirmation', function () {
+          return document.querySelector('#form-1 #password').value
+        }, 'Mật khẩu nhập lại không chính xác')
       ]
     })
   </script>
